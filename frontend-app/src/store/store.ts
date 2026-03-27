@@ -337,7 +337,7 @@ export const useAppStore = create<AppState>((set) => ({
   setCalendarView: (view) => set({ calendarView: view }),
 
   // Auth & User
-  user: null,
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
   isAuthenticated: !!localStorage.getItem('token'),
   driveStatus: { configured: false, connected: false, lastBackup: null },
   setUser: (user) => set({ user }),

@@ -17,16 +17,16 @@ import { useAppStore } from './store/store';
 import { api } from './lib/api';
 
 function App() {
-  const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, user, setUser, logout } = useAppStore();
+  const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, setUser } = useAppStore();
 
   // Fetch true user profile on mount if authenticated but we don't have full user obj
   useEffect(() => {
-    if (isAuthenticated && !user) {
+    if (isAuthenticated) {
       api.get('/user/me')
         .then((data: any) => setUser(data))
-        .catch(() => logout());
+        .catch(console.error); // 401s are auto-logged out by api.ts. Network errors shouldn't disconnect user.
     }
-  }, [isAuthenticated, user, setUser, logout]);
+  }, [isAuthenticated, setUser]);
 
   // Global keyboard shortcut for Command Palette
   useEffect(() => {
