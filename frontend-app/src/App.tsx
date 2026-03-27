@@ -12,10 +12,21 @@ import CalendarPage from './pages/CalendarPage';
 import HabitsPage from './pages/HabitsPage';
 import NotesPage from './pages/NotesPage';
 import ProfilePage from './pages/ProfilePage';
+import AuthPage from './pages/AuthPage';
 import { useAppStore } from './store/store';
+import { api } from './lib/api';
 
 function App() {
-  const { activeModule, isFocusMode, setCommandPaletteOpen } = useAppStore();
+  const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, user, setUser, logout } = useAppStore();
+
+  // Fetch true user profile on mount if authenticated but we don't have full user obj
+  useEffect(() => {
+    if (isAuthenticated && !user) {
+      api.get('/user/me')
+        .then((data: any) => setUser(data))
+        .catch(() => logout());
+    }
+  }, [isAuthenticated, user, setUser, logout]);
 
   // Global keyboard shortcut for Command Palette
   useEffect(() => {
@@ -41,6 +52,14 @@ function App() {
       default: return <Dashboard />;
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <BrowserRouter>
+        <AuthPage />
+      </BrowserRouter>
+    );
+  }
 
   return (
     <BrowserRouter>
