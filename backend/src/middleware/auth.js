@@ -1,7 +1,5 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
-
 export default function auth(req, res, next) {
   const header = req.header('Authorization');
   if (!header) return res.status(401).json({ msg: 'No token, authorization denied' });
@@ -10,6 +8,7 @@ export default function auth(req, res, next) {
   if (!token) return res.status(401).json({ msg: 'No token, authorization denied' });
 
   try {
+    const JWT_SECRET = process.env.JWT_SECRET || 'supersecret123';
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded.user; // { id: '...' }
     next();
