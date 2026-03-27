@@ -51,8 +51,15 @@ router.put('/password', auth, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) return res.status(400).json({ msg: 'Current password is incorrect' });
+    if (user.password) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) return res.status(400).json({ msg: 'Current password is incorrect' });
+    } else {
+      // User registered with Google and has no password yet
+      if (currentPassword !== '') {
+        return res.status(400).json({ msg: 'Account created with Google. Leave current password empty to set a new one.' });
+      }
+    }
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
