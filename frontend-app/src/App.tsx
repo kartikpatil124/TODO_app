@@ -19,6 +19,13 @@ import Terms from './pages/Terms';
 import { useAppStore } from './store/store';
 import { api } from './lib/api';
 
+// ProtectedRoute Component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAppStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
 function App() {
   const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, setUser, login } = useAppStore();
 
@@ -71,13 +78,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to="/dashboard" replace />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/login" element={!isAuthenticated ? <AuthPage /> : <Navigate to="/dashboard" replace />} />
         
+        {/* Protected Application Routes */}
         <Route path="/dashboard" element={
-          isAuthenticated ? (
+          <ProtectedRoute>
             <div className={`min-h-screen overflow-x-hidden transition-colors duration-500 ${
               isFocusMode
                 ? 'bg-slate-950'
@@ -101,9 +110,7 @@ function App() {
               <OrderDetailModal />
               <CommandPalette />
             </div>
-          ) : (
-            <Navigate to="/login" replace />
-          )
+          </ProtectedRoute>
         } />
         
         {/* Catch-all redirect */}

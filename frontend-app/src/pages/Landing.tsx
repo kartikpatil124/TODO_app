@@ -17,7 +17,7 @@ export default function Landing() {
             <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Smart Todo App</span>
+            <span className="text-xl font-bold tracking-tight">Nexus OS</span>
           </div>
           <div className="flex items-center gap-6">
             <Link to="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
@@ -49,9 +49,15 @@ export default function Landing() {
             </span>
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            AI-powered task manager to organize and boost productivity.
+          <p className="text-lg md:text-xl text-slate-400 mb-8 max-w-2xl mx-auto leading-relaxed">
+            AI-powered productivity system to manage tasks, habits, and workflows.
           </p>
+          
+          <div className="flex justify-center gap-6 mb-10 text-slate-300 text-sm max-w-lg mx-auto">
+            <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-indigo-400"/> Task management</span>
+            <span className="flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-indigo-400"/> AI suggestions</span>
+            <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-indigo-400"/> Habit tracking</span>
+          </div>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
@@ -106,7 +112,7 @@ export default function Landing() {
       <footer className="border-t border-white/[0.08] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} Smart Todo App. All rights reserved.
+            © {new Date().getFullYear()} Nexus OS. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link to="/privacy-policy" className="text-sm text-slate-400 hover:text-white transition-colors">
