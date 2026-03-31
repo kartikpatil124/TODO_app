@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, Shield, Zap, Sparkles } from 'lucide-react';
-
-const GOOGLE_AUTH_URL = 'https://todo-app-wude.onrender.com/auth/google';
+import { GOOGLE_AUTH_URL } from '../lib/api';
 
 export default function Landing() {
   return (

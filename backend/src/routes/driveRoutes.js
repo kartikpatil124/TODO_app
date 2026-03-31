@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Task from '../models/Task.js';
 import Project from '../models/Project.js';
 import * as driveService from '../services/driveService.js';
+import { FRONTEND_URL } from '../config/appUrls.js';
 
 const router = express.Router();
 
@@ -57,12 +58,10 @@ router.get('/callback', async (req, res) => {
     });
 
     // Redirect to frontend profile page
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}?driveConnected=true`);
+    res.redirect(`${FRONTEND_URL}?driveConnected=true`);
   } catch (err) {
     console.error('Drive callback error:', err.message);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}?driveError=true`);
+    res.redirect(`${FRONTEND_URL}?driveError=true`);
   }
 });
 

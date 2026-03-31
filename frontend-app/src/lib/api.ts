@@ -3,6 +3,8 @@ let envApi = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005/api';
 if (envApi.endsWith('/')) envApi = envApi.slice(0, -1);
 if (!envApi.endsWith('/api')) envApi = `${envApi}/api`;
 export const API_BASE = envApi;
+export const AUTH_BASE = API_BASE.replace(/\/api$/, '');
+export const GOOGLE_AUTH_URL = `${AUTH_BASE}/auth/google`;
 
 type FetchOptions = {
   method?: string;

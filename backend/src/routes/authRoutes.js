@@ -3,16 +3,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
+import { FRONTEND_URL, GOOGLE_AUTH_CALLBACK_URL } from '../config/appUrls.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret123';
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5005';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://todo-app-ten-green-65.vercel.app';
-const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || `${BACKEND_URL}/auth/google/callback`;
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  GOOGLE_CALLBACK_URL
+  GOOGLE_AUTH_CALLBACK_URL
 );
 
 const generatePayload = (user) => ({

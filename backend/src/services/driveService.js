@@ -1,8 +1,9 @@
 import { google } from 'googleapis';
+import { GOOGLE_DRIVE_CALLBACK_URL } from '../config/appUrls.js';
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5005/api/drive/callback';
+const REDIRECT_URI = GOOGLE_DRIVE_CALLBACK_URL;
 
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 const BACKUP_FOLDER_NAME = 'TodoAppBackup';
