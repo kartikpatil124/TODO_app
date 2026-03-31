@@ -1,18 +1,13 @@
 import express from 'express';
 import Task from '../models/Task.js';
+import auth from '../middleware/auth.js';
 
 const router = express.Router();
-
-// Mock Auth Middleware
-const auth = (req, res, next) => {
-  req.user = { id: req.headers.userid || 'mock-user-id' }; // Simplified for MVP if no token passed, but in real use auth token
-  next();
-};
 
 // Get all tasks for user
 router.get('/', auth, async (req, res) => {
   try {
-    const tasks = await Task.find({ assignedTo: req.user.id });
+    const tasks = await Task.find({ userId: req.user.id });
     res.json(tasks);
   } catch (err) {
     res.status(500).send('Server error');
@@ -22,7 +17,7 @@ router.get('/', auth, async (req, res) => {
 // Create task
 router.post('/', auth, async (req, res) => {
   try {
-    const { title, description, priority, dueDate, status, energyLevel } = req.body;
+    const { title, description, priority, dueDate, status, energyLevel, tags, completed } = req.body;
     const newTask = new Task({
       title,
       description,
@@ -30,7 +25,9 @@ router.post('/', auth, async (req, res) => {
       dueDate,
       status,
       energyLevel,
-      assignedTo: req.user.id
+      tags: tags || [],
+      completed: completed || false,
+      userId: req.user.id
     });
     const task = await newTask.save();
     res.json(task);
@@ -52,7 +49,7 @@ router.put('/:id', auth, async (req, res) => {
 // Delete task
 router.delete('/:id', auth, async (req, res) => {
   try {
-    await Task.findByIdAndDelete(req.params.id);
+    await Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     res.json({ msg: 'Task removed' });
   } catch (err) {
     res.status(500).send('Server error');

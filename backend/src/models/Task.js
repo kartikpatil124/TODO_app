@@ -5,13 +5,11 @@ const taskSchema = new mongoose.Schema({
   description: { type: String },
   status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },
   priority: { type: String, enum: ['P1', 'P2', 'P3', 'P4'], default: 'P4' },
-  dueDate: { type: Date },
-  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
   energyLevel: { type: String, enum: ['deep', 'shallow'], default: 'shallow' },
+  dueDate: { type: Date },
   tags: [{ type: String }],
-  dependencies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
-  commitmentProofRequired: { type: Boolean, default: false } // For Commitment Mode
+  completed: { type: Boolean, default: false },
+  userId: { type: String, required: true }
 }, { timestamps: true });
 
 export default mongoose.model('Task', taskSchema);

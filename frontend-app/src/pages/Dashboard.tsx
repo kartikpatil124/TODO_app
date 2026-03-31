@@ -3,11 +3,25 @@ import {
   CheckSquare, ShoppingBag, Flame, TrendingUp, Clock, Sparkles,
   ArrowRight, Target, Zap
 } from 'lucide-react';
+import { useEffect } from 'react';
 import { useAppStore } from '../store/store';
+import { api } from '../lib/api';
 import { motion } from 'framer-motion';
 
 export default function Dashboard() {
-  const { tasks, orders, habits, setActiveModule, isFocusMode, toggleFocusMode } = useAppStore();
+  const { tasks, setTasks, orders, habits, setActiveModule, isFocusMode, toggleFocusMode } = useAppStore();
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const data = await api.get<any[]>('/tasks');
+        setTasks(data);
+      } catch (err) {
+        console.error('Failed to fetch tasks', err);
+      }
+    };
+    fetchTasks();
+  }, [setTasks]);
 
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');

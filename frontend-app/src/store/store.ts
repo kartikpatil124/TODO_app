@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api } from '../lib/api';
 
 // ─── Task Types ─────────────────────────────────────────
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
@@ -266,25 +267,62 @@ const sampleNotes: Note[] = [
 // ─── Store ──────────────────────────────────────────────
 export const useAppStore = create<AppState>((set) => ({
   // Tasks
-  tasks: sampleTasks,
+  tasks: [],
   taskView: 'list',
   taskFilter: {},
   setTasks: (tasks) => set({ tasks }),
-  addTask: (task) => set((s) => ({ tasks: [task, ...s.tasks] })),
-  updateTask: (id, updates) => set((s) => ({
-    tasks: s.tasks.map(t => t._id === id ? { ...t, ...updates } : t)
-  })),
-  deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter(t => t._id !== id) })),
-  toggleTaskComplete: (id) => set((s) => ({
-    tasks: s.tasks.map(t => t._id === id
-      ? { ...t, completed: !t.completed, status: t.completed ? 'todo' : 'done' }
-      : t)
-  })),
-  toggleSubtask: (taskId, subtaskId) => set((s) => ({
-    tasks: s.tasks.map(t => t._id === taskId
-      ? { ...t, subtasks: t.subtasks.map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st) }
-      : t)
-  })),
+  addTask: async (task) => {
+    set((s) => ({ tasks: [task, ...s.tasks] })); // Optimistic
+    try {
+      const savedTask = await api.post<Task>('/tasks', task);
+      set((s) => ({ tasks: s.tasks.map(t => t._id === task._id ? savedTask : t) }));
+    } catch (err) {
+      set((s) => ({ tasks: s.tasks.filter(t => t._id !== task._id) })); // Rollback
+    }
+  },
+  updateTask: async (id, updates) => {
+    set((s) => ({ tasks: s.tasks.map(t => t._id === id ? { ...t, ...updates } : t) })); // Optimistic
+    try {
+      await api.put(`/tasks/${id}`, updates);
+    } catch (err) { console.error(err); }
+  },
+  deleteTask: async (id) => {
+    set((s) => ({ tasks: s.tasks.filter(t => t._id !== id) })); // Optimistic
+    try {
+      await api.delete(`/tasks/${id}`);
+    } catch (err) { console.error(err); }
+  },
+  toggleTaskComplete: async (id) => {
+    let targetTask: Task | undefined;
+    set((s) => {
+      targetTask = s.tasks.find(t => t._id === id);
+      return {
+        tasks: s.tasks.map(t => t._id === id
+          ? { ...t, completed: !t.completed, status: t.completed ? 'todo' : 'done' }
+          : t)
+      };
+    });
+    if (targetTask) {
+      try {
+        await api.put(`/tasks/${id}`, { completed: !targetTask.completed, status: targetTask.completed ? 'todo' : 'done' });
+      } catch (err) { console.error(err); }
+    }
+  },
+  toggleSubtask: async (taskId, subtaskId) => {
+    let updatedSubtasks: SubTask[] = [];
+    set((s) => ({
+      tasks: s.tasks.map(t => {
+        if (t._id === taskId) {
+          updatedSubtasks = t.subtasks.map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st);
+          return { ...t, subtasks: updatedSubtasks };
+        }
+        return t;
+      })
+    }));
+    try {
+      await api.put(`/tasks/${taskId}`, { subtasks: updatedSubtasks });
+    } catch (err) { console.error(err); }
+  },
   setTaskView: (view) => set({ taskView: view }),
   setTaskFilter: (filter) => set({ taskFilter: filter }),
 
