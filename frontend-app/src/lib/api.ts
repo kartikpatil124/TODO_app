@@ -2,7 +2,7 @@
 let envApi = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005/api';
 if (envApi.endsWith('/')) envApi = envApi.slice(0, -1);
 if (!envApi.endsWith('/api')) envApi = `${envApi}/api`;
-const API_BASE = envApi;
+export const API_BASE = envApi;
 
 type FetchOptions = {
   method?: string;

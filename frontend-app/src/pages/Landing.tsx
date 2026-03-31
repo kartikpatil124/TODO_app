@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, Shield, Zap, Sparkles } from 'lucide-react';
+import { API_BASE } from '../lib/api';
 
 export default function Landing() {
   return (
@@ -49,12 +50,12 @@ export default function Landing() {
           </h1>
           
           <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Smart Todo App organizes your work and life. With advanced AI features and a beautiful interface, staying productive has never been this simple.
+            AI-powered task manager to organize and boost productivity.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/login"
+            <a
+              href={`${API_BASE}/auth/google`}
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-slate-900 font-semibold hover:bg-slate-100 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -64,7 +65,7 @@ export default function Landing() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
               Login with Google
-            </Link>
+            </a>
           </div>
         </motion.div>
 

@@ -20,7 +20,7 @@ import { useAppStore } from './store/store';
 import { api } from './lib/api';
 
 function App() {
-  const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, setUser } = useAppStore();
+  const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, setUser, login } = useAppStore();
 
   // Fetch true user profile on mount if authenticated but we don't have full user obj
   useEffect(() => {
@@ -30,6 +30,18 @@ function App() {
         .catch(console.error); // 401s are auto-logged out by api.ts. Network errors shouldn't disconnect user.
     }
   }, [isAuthenticated, setUser]);
+
+  // Handle Google OAuth Callback Token from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      // Temporarily set a blank user to authenticate immediately.
+      // The useEffect above will fetch the true user profile since isAuthenticated becomes true.
+      login({} as any, token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [login]);
 
   // Global keyboard shortcut for Command Palette
   useEffect(() => {

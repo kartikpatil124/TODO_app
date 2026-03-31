@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react';
-import { useGoogleLogin } from '@react-oauth/google';
 import { useAppStore } from '../store/store';
-import { api } from '../lib/api';
+import { api, API_BASE } from '../lib/api';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -35,27 +34,7 @@ export default function AuthPage() {
     }
   };
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      setError('');
-      try {
-        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        }).then(res => res.json());
-
-        const res = await api.post<{ token: string; user: any }>('/auth/google', {
-          token: tokenResponse.access_token,
-          userInfo: userInfo // Sometimes backend prefers ID token, we'll send both or use userInfo
-        });
-        login(res.user, res.token);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Google login failed');
-        setLoading(false);
-      }
-    },
-    onError: () => setError('Google sign-in failed'),
-  });
+  // Google logic moved to backend redirect
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -156,7 +135,7 @@ export default function AuthPage() {
           </div>
 
           <button
-            onClick={() => googleLogin()}
+            onClick={() => window.location.href = `${API_BASE}/auth/google`}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 p-3 rounded-xl bg-white text-slate-900 font-medium hover:bg-slate-100 transition-colors disabled:opacity-50"
           >
