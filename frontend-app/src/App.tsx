@@ -1,4 +1,4 @@
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
@@ -13,6 +13,9 @@ import HabitsPage from './pages/HabitsPage';
 import NotesPage from './pages/NotesPage';
 import ProfilePage from './pages/ProfilePage';
 import AuthPage from './pages/AuthPage';
+import Landing from './pages/Landing';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Terms from './pages/Terms';
 import { useAppStore } from './store/store';
 import { api } from './lib/api';
 
@@ -53,39 +56,47 @@ function App() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <BrowserRouter>
-        <AuthPage />
-      </BrowserRouter>
-    );
-  }
-
   return (
     <BrowserRouter>
-      <div className={`min-h-screen overflow-x-hidden transition-colors duration-500 ${
-        isFocusMode
-          ? 'bg-slate-950'
-          : 'bg-slate-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-950/30 via-slate-950 to-slate-950'
-      } text-white flex`}>
-        {/* Desktop Sidebar */}
-        {!isFocusMode && <Sidebar />}
+      <Routes>
+        <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/login" element={!isAuthenticated ? <AuthPage /> : <Navigate to="/dashboard" replace />} />
+        
+        <Route path="/dashboard" element={
+          isAuthenticated ? (
+            <div className={`min-h-screen overflow-x-hidden transition-colors duration-500 ${
+              isFocusMode
+                ? 'bg-slate-950'
+                : 'bg-slate-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-950/30 via-slate-950 to-slate-950'
+            } text-white flex`}>
+              {/* Desktop Sidebar */}
+              {!isFocusMode && <Sidebar />}
 
-        {/* Main Content */}
-        <main className={`flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden ${!isFocusMode ? 'pb-20 md:pb-0' : ''}`}>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            {renderModule()}
-          </div>
-        </main>
+              {/* Main Content */}
+              <main className={`flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden ${!isFocusMode ? 'pb-20 md:pb-0' : ''}`}>
+                <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                  {renderModule()}
+                </div>
+              </main>
 
-        {/* Mobile Bottom Nav */}
-        {!isFocusMode && <MobileNav />}
+              {/* Mobile Bottom Nav */}
+              {!isFocusMode && <MobileNav />}
 
-        {/* Modals & Overlays */}
-        <AddTaskModal />
-        <OrderDetailModal />
-        <CommandPalette />
-      </div>
+              {/* Modals & Overlays */}
+              <AddTaskModal />
+              <OrderDetailModal />
+              <CommandPalette />
+            </div>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        } />
+        
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />} />
+      </Routes>
     </BrowserRouter>
   );
 }

@@ -64,7 +64,7 @@ export default function AuthPage() {
           <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-indigo-500/25 mb-6">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome to Nexus OS</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome to Smart Todo App</h1>
           <p className="text-slate-400">Your AI-powered productivity system</p>
         </div>
 
