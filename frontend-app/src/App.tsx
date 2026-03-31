@@ -13,19 +13,12 @@ import HabitsPage from './pages/HabitsPage';
 import NotesPage from './pages/NotesPage';
 import ProfilePage from './pages/ProfilePage';
 import AuthPage from './pages/AuthPage';
-import Landing from './pages/Landing';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
+import Landing from './pages/Landing';
+import ProtectedRoute from './components/ProtectedRoute';
 import { useAppStore } from './store/store';
 import { api } from './lib/api';
-
-// ProtectedRoute Component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAppStore();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-};
-
 function App() {
   const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, setUser, login } = useAppStore();
 
