@@ -7,10 +7,12 @@ import User from '../models/User.js';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret123';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5005';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://todo-app-ten-green-65.vercel.app';
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || `${BACKEND_URL}/auth/google/callback`;
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  `${BACKEND_URL}/api/auth/google/callback`
+  GOOGLE_CALLBACK_URL
 );
 
 const generatePayload = (user) => ({
@@ -161,14 +163,12 @@ router.get('/google/callback', async (req, res) => {
     const jwtPayload = { user: { id: user.id } };
     jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: '7d' }, (err, jwtToken) => {
       if (err) throw err;
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       // Redirect to frontend dashboard with token in URL query
-      res.redirect(`${frontendUrl}/dashboard?token=${jwtToken}`);
+      res.redirect(`${FRONTEND_URL}/dashboard?token=${jwtToken}`);
     });
   } catch(err) {
     console.error('Google Auth Callback Error:', err);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}/login?error=auth_failed`);
+    res.redirect(`${FRONTEND_URL}/login?error=auth_failed`);
   }
 });
 

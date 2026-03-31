@@ -24,7 +24,9 @@ import userRoutes from './src/routes/userRoutes.js';
 import driveRoutes from './src/routes/driveRoutes.js';
 
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/tasks', taskRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/drive', driveRoutes);

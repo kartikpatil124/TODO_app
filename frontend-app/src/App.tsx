@@ -20,7 +20,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { useAppStore } from './store/store';
 import { api } from './lib/api';
 function App() {
-  const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, setUser, login } = useAppStore();
+  const { activeModule, isFocusMode, setCommandPaletteOpen, isAuthenticated, setUser, login, setActiveModule } = useAppStore();
 
   // Fetch true user profile on mount if authenticated but we don't have full user obj
   useEffect(() => {
@@ -68,11 +68,44 @@ function App() {
     }
   };
 
+  const AppShell = () => (
+    <div className={`min-h-screen overflow-x-hidden transition-colors duration-500 ${
+      isFocusMode
+        ? 'bg-slate-950'
+        : 'bg-slate-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-950/30 via-slate-950 to-slate-950'
+    } text-white flex`}>
+      {!isFocusMode && <Sidebar />}
+      <main className={`flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden ${!isFocusMode ? 'pb-20 md:pb-0' : ''}`}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {renderModule()}
+        </div>
+      </main>
+      {!isFocusMode && <MobileNav />}
+      <AddTaskModal />
+      <OrderDetailModal />
+      <CommandPalette />
+    </div>
+  );
+
+  const TasksRouteShell = () => {
+    useEffect(() => {
+      setActiveModule('tasks');
+    }, [setActiveModule]);
+    return <AppShell />;
+  };
+
+  const DashboardRouteShell = () => {
+    useEffect(() => {
+      setActiveModule('dashboard');
+    }, [setActiveModule]);
+    return <AppShell />;
+  };
+
   return (
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={!isAuthenticated ? <Landing /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/login" element={!isAuthenticated ? <AuthPage /> : <Navigate to="/dashboard" replace />} />
@@ -80,29 +113,12 @@ function App() {
         {/* Protected Application Routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <div className={`min-h-screen overflow-x-hidden transition-colors duration-500 ${
-              isFocusMode
-                ? 'bg-slate-950'
-                : 'bg-slate-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-950/30 via-slate-950 to-slate-950'
-            } text-white flex`}>
-              {/* Desktop Sidebar */}
-              {!isFocusMode && <Sidebar />}
-
-              {/* Main Content */}
-              <main className={`flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden ${!isFocusMode ? 'pb-20 md:pb-0' : ''}`}>
-                <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                  {renderModule()}
-                </div>
-              </main>
-
-              {/* Mobile Bottom Nav */}
-              {!isFocusMode && <MobileNav />}
-
-              {/* Modals & Overlays */}
-              <AddTaskModal />
-              <OrderDetailModal />
-              <CommandPalette />
-            </div>
+            <DashboardRouteShell />
+          </ProtectedRoute>
+        } />
+        <Route path="/tasks" element={
+          <ProtectedRoute>
+            <TasksRouteShell />
           </ProtectedRoute>
         } />
         

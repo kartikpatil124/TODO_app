@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, Shield, Zap, Sparkles } from 'lucide-react';
-import { API_BASE } from '../lib/api';
+
+const GOOGLE_AUTH_URL = 'https://todo-app-wude.onrender.com/auth/google';
 
 export default function Landing() {
   return (
@@ -61,7 +62,7 @@ export default function Landing() {
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href={`${API_BASE}/auth/google`}
+              href={GOOGLE_AUTH_URL}
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-slate-900 font-semibold hover:bg-slate-100 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

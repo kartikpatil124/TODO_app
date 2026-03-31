@@ -7,7 +7,7 @@ const router = express.Router();
 // Get all tasks for user
 router.get('/', auth, async (req, res) => {
   try {
-    const tasks = await Task.find({ userId: req.user.id });
+    const tasks = await Task.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(tasks);
   } catch (err) {
     res.status(500).send('Server error');
@@ -39,7 +39,12 @@ router.post('/', auth, async (req, res) => {
 // Update task
 router.put('/:id', auth, async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const task = await Task.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      req.body,
+      { new: true }
+    );
+    if (!task) return res.status(404).json({ msg: 'Task not found' });
     res.json(task);
   } catch (err) {
     res.status(500).send('Server error');

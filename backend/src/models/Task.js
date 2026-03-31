@@ -8,8 +8,14 @@ const taskSchema = new mongoose.Schema({
   energyLevel: { type: String, enum: ['deep', 'shallow'], default: 'shallow' },
   dueDate: { type: Date },
   tags: [{ type: String }],
+  subtasks: [{
+    id: { type: String },
+    title: { type: String },
+    completed: { type: Boolean, default: false }
+  }],
+  recurring: { type: String, enum: ['none', 'daily', 'weekly', 'monthly'], default: 'none' },
   completed: { type: Boolean, default: false },
-  userId: { type: String, required: true }
+  userId: { type: String, required: true, index: true }
 }, { timestamps: true });
 
 export default mongoose.model('Task', taskSchema);

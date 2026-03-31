@@ -24,7 +24,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">1. Introduction</h2>
             <p>
-              Welcome to Smart Todo App. We respect your privacy and are committed to protecting your personal data. 
+              Welcome to Nexus OS. We respect your privacy and are committed to protecting your personal data. 
               This privacy policy will inform you as to how we look after your personal data when you visit our website 
               (regardless of where you visit it from) and tell you about your privacy rights and how the law protects you.
             </p>
@@ -56,7 +56,7 @@ export default function PrivacyPolicy() {
               We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way, altered or disclosed.
             </p>
             <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg mt-4 text-indigo-200">
-              <strong>Strict No-Sell Policy:</strong> Smart Todo App does NOT sell, rent, or lease any of your personal data or user-generated content to third parties under any circumstances.
+              <strong>Strict No-Sell Policy:</strong> Nexus OS does NOT sell, rent, or lease any of your personal data or user-generated content to third parties under any circumstances.
             </div>
           </section>
 
@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">5. Contact Us</h2>
             <p>
               If you have any questions about this privacy policy or our privacy practices, please contact us at: <br/>
-              <strong className="text-white">support@smarttodoapp.com</strong>
+              <strong className="text-white">support@nexusos.app</strong>
             </p>
           </section>
         </div>

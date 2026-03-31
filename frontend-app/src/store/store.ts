@@ -192,40 +192,6 @@ const now = () => new Date().toISOString();
 const today = () => new Date().toISOString().split('T')[0];
 
 // ─── Sample Data ────────────────────────────────────────
-const sampleTasks: Task[] = [
-  {
-    _id: uid(), title: 'Finish MVP Backend', description: 'Complete all API endpoints and database models',
-    status: 'done', priority: 'P1', energyLevel: 'deep', tags: ['dev', 'backend'],
-    subtasks: [
-      { id: uid(), title: 'Setup Express routes', completed: true },
-      { id: uid(), title: 'Create MongoDB models', completed: true },
-    ],
-    recurring: 'none', completed: true, createdAt: now(),
-  },
-  {
-    _id: uid(), title: 'Build React UI', description: 'Create dashboard, task views, and order system',
-    status: 'in-progress', priority: 'P1', energyLevel: 'deep', tags: ['dev', 'frontend'],
-    subtasks: [
-      { id: uid(), title: 'Design component library', completed: true },
-      { id: uid(), title: 'Build task views', completed: false },
-      { id: uid(), title: 'Implement order flow', completed: false },
-    ],
-    recurring: 'none', completed: false, createdAt: now(), dueDate: today(),
-  },
-  {
-    _id: uid(), title: 'Reply to client emails', status: 'todo', priority: 'P3', energyLevel: 'shallow',
-    tags: ['communication'], subtasks: [], recurring: 'daily', completed: false, createdAt: now(),
-  },
-  {
-    _id: uid(), title: 'Review PR #42', status: 'todo', priority: 'P2', energyLevel: 'deep',
-    tags: ['dev'], subtasks: [], recurring: 'none', completed: false, createdAt: now(), dueDate: today(),
-  },
-  {
-    _id: uid(), title: 'Update project docs', status: 'todo', priority: 'P4', energyLevel: 'shallow',
-    tags: ['docs'], subtasks: [], recurring: 'weekly', completed: false, createdAt: now(),
-  },
-];
-
 const sampleOrders: Order[] = [
   {
     _id: uid(), partyName: 'Sharma Steels',

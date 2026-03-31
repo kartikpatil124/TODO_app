@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react';
 import { useAppStore } from '../store/store';
-import { api, API_BASE } from '../lib/api';
+import { api } from '../lib/api';
+
+const GOOGLE_AUTH_URL = 'https://todo-app-wude.onrender.com/auth/google';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -135,7 +137,7 @@ export default function AuthPage() {
           </div>
 
           <button
-            onClick={() => window.location.href = `${API_BASE}/auth/google`}
+            onClick={() => window.location.href = GOOGLE_AUTH_URL}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 p-3 rounded-xl bg-white text-slate-900 font-medium hover:bg-slate-100 transition-colors disabled:opacity-50"
           >

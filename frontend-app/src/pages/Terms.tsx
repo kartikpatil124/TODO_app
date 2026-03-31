@@ -24,7 +24,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">1. Acceptance of Terms</h2>
             <p>
-              By accessing and using Smart Todo App, you accept and agree to be bound by the terms and provision of this agreement. 
+              By accessing and using Nexus OS, you accept and agree to be bound by the terms and provision of this agreement. 
               In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.
             </p>
           </section>
@@ -32,7 +32,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">2. Description of Service</h2>
             <p>
-              Smart Todo App provides users with access to a rich collection of resources, including various productivity tools 
+              Nexus OS provides users with access to a rich collection of resources, including various productivity tools 
               such as task management, habit tracking, and calendar scheduling ("the Service"). You understand and agree that the 
               Service is provided "AS-IS" and that Smart Todo App assumes no responsibility for the timeliness, deletion, mis-delivery, 
               or failure to store any user communications or personalization settings.
@@ -55,11 +55,11 @@ export default function Terms() {
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">4. Liability Disclaimer</h2>
             <p>
               The information, software, products, and services included in or available through Smart Todo App may include 
-              inaccuracies or typographical errors. Changes are periodically added to the information herein. Smart Todo App 
+              inaccuracies or typographical errors. Changes are periodically added to the information herein. Nexus OS 
               and/or its suppliers may make improvements and/or changes in the application at any time.
             </p>
             <p className="mt-4 uppercase text-sm font-semibold text-slate-500">
-              Smart Todo App makes no representations about the suitability, reliability, availability, timeliness, and accuracy 
+              Nexus OS makes no representations about the suitability, reliability, availability, timeliness, and accuracy 
               of the service for any purpose. To the maximum extent permitted by applicable law, all such information, software, 
               products, services are provided "as is" without warranty or condition of any kind.
             </p>

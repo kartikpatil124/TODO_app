@@ -79,7 +79,7 @@ router.delete('/delete', auth, async (req, res) => {
 
     // Cascade delete all user data
     const [taskResult, projectResult] = await Promise.all([
-      Task.deleteMany({ assignedTo: userId }),
+      Task.deleteMany({ userId }),
       Project.deleteMany({ owner: userId }),
     ]);
 
