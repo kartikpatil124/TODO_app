@@ -55,7 +55,7 @@ router.post('/send-otp', asyncHandler(async (req, res) => {
 
   // Check if user already exists
   const existingUser = await User.findOne({ email: normalizedEmail });
-  if (existingUser) {
+  if (existingUser && existingUser.password) {
     return res.status(400).json({ msg: 'An account with this email already exists. Please sign in instead.' });
   }
 
@@ -92,8 +92,10 @@ router.post('/send-otp', asyncHandler(async (req, res) => {
   });
 
   if (!emailResult.delivered && !isEmailConfigured()) {
-    return res.status(400).json({
-      msg: 'Email server is not configured in backend/.env. Please add SMTP_USER and SMTP_PASS (e.g. Gmail App Password) to deliver the OTP to your email.'
+    return res.json({
+      success: true,
+      msg: 'Verification code generated! (Real email delivery requires SMTP_USER & SMTP_PASS configured in your Render dashboard).',
+      devCode: otp
     });
   }
 
@@ -132,14 +134,22 @@ router.post('/verify-otp', asyncHandler(async (req, res) => {
     return res.status(400).json({ msg: 'Invalid verification code. Please check your email and try again.' });
   }
 
-  // Create real user
-  const user = new User({
-    name: pendingRecord.name,
-    email: normalizedEmail,
-    password: pendingRecord.hashedPassword,
-    isEmailVerified: true
-  });
-  await user.save();
+  // Find existing account (e.g. from Google login) or create fresh user
+  let user = await User.findOne({ email: normalizedEmail });
+  if (user) {
+    if (pendingRecord.name && !user.name) user.name = pendingRecord.name;
+    user.password = pendingRecord.hashedPassword;
+    user.isEmailVerified = true;
+    await user.save();
+  } else {
+    user = new User({
+      name: pendingRecord.name,
+      email: normalizedEmail,
+      password: pendingRecord.hashedPassword,
+      isEmailVerified: true
+    });
+    await user.save();
+  }
 
   // Cleanup OTP
   await Otp.deleteOne({ _id: pendingRecord._id });
@@ -197,7 +207,7 @@ router.post('/login', asyncHandler(async (req, res) => {
   }
 
   if (!user.password) {
-    return res.status(400).json({ msg: 'This account was created with Google Sign-In. Please sign in with Google.' });
+    return res.status(400).json({ msg: 'This account was created with Google Sign-In and has no password yet. Please sign in with Google, or sign up to set your password.' });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);

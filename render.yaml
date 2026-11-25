@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: todo-app-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://todo-app-ten-green-65.vercel.app

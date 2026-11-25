@@ -21,6 +21,7 @@ export default function AuthPage() {
   // OTP State
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [devCode, setDevCode] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(
@@ -75,7 +76,7 @@ export default function AuthPage() {
 
       setLoading(true);
       try {
-        const res = await api.post<{ msg: string }>('/auth/send-otp', {
+        const res = await api.post<{ msg: string; devCode?: string }>('/auth/send-otp', {
           name: name.trim(),
           email: email.trim(),
           password
@@ -85,6 +86,11 @@ export default function AuthPage() {
         setOtpDigits(['', '', '', '', '', '']);
         setResendCooldown(30);
         setInfoMsg(res.msg || 'Verification code sent to your email!');
+        if (res.devCode) {
+          setDevCode(res.devCode);
+        } else {
+          setDevCode(null);
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to send verification code.');
       } finally {
@@ -156,11 +162,14 @@ export default function AuthPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post<{ msg: string }>('/auth/resend-otp', {
+      const res = await api.post<{ msg: string; devCode?: string }>('/auth/resend-otp', {
         email: email.trim()
       });
       setResendCooldown(30);
       setInfoMsg(res.msg || 'A fresh verification code has been sent to your email.');
+      if (res.devCode) {
+        setDevCode(res.devCode);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to resend verification code.');
     } finally {
@@ -357,6 +366,19 @@ export default function AuthPage() {
                     We sent a 6-digit verification code to <span className="font-semibold text-indigo-300">{email}</span>
                   </p>
                 </div>
+
+                {devCode && (
+                  <div
+                    onClick={() => {
+                      const chars = devCode.slice(0, 6).split('');
+                      setOtpDigits(chars);
+                    }}
+                    className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs text-center cursor-pointer hover:bg-amber-500/15 transition-colors"
+                  >
+                    <p className="font-semibold">💡 Verification Code: {devCode}</p>
+                    <p className="text-[11px] opacity-80 mt-0.5">(Click here to auto-fill your code)</p>
+                  </div>
+                )}
 
                 <form onSubmit={handleVerifyOtp} className="space-y-6">
                   {/* 6 Digit Inputs */}

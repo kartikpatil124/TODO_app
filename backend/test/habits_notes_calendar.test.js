@@ -3,16 +3,16 @@ import mongoose from 'mongoose';
 import express from 'express';
 import http from 'http';
 import jwt from 'jsonwebtoken';
-import User from './src/models/User.js';
-import Task from './src/models/Task.js';
-import Habit from './src/models/Habit.js';
-import Note from './src/models/Note.js';
-import TimeBlock from './src/models/TimeBlock.js';
+import User from '../src/models/User.js';
+import Task from '../src/models/Task.js';
+import Habit from '../src/models/Habit.js';
+import Note from '../src/models/Note.js';
+import TimeBlock from '../src/models/TimeBlock.js';
 
-import habitRoutes from './src/routes/habitRoutes.js';
-import noteRoutes from './src/routes/noteRoutes.js';
-import calendarRoutes from './src/routes/calendarRoutes.js';
-import userRoutes from './src/routes/userRoutes.js';
+import habitRoutes from '../src/routes/habitRoutes.js';
+import noteRoutes from '../src/routes/noteRoutes.js';
+import calendarRoutes from '../src/routes/calendarRoutes.js';
+import userRoutes from '../src/routes/userRoutes.js';
 
 const TEST_SECRET = 'test_secret_for_modules_1234567890';
 process.env.JWT_SECRET = TEST_SECRET;
