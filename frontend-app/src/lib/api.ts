@@ -13,6 +13,20 @@ type FetchOptions = {
   timeoutMs?: number;
 };
 
+let slowRequestCount = 0;
+
+function incrementSlow() {
+  slowRequestCount++;
+  setServerWaking(true);
+}
+
+function decrementSlow() {
+  slowRequestCount = Math.max(0, slowRequestCount - 1);
+  if (slowRequestCount === 0) {
+    setServerWaking(false);
+  }
+}
+
 // Event-based notification for slow server (Render waking up)
 export const onServerWakingStateChange = (callback: (isWaking: boolean) => void): (() => void) => {
   const handler = (e: Event) => {
@@ -41,9 +55,10 @@ async function request<T = unknown>(path: string, options: FetchOptions = {}): P
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  // If request takes longer than 3.5 seconds, notify that server might be waking up
-  let wakingTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-    setServerWaking(true);
+  let isMarkedSlow = false;
+  const wakingTimer = setTimeout(() => {
+    isMarkedSlow = true;
+    incrementSlow();
   }, 3500);
 
   try {
@@ -55,8 +70,10 @@ async function request<T = unknown>(path: string, options: FetchOptions = {}): P
     });
 
     clearTimeout(timeoutId);
-    if (wakingTimer) clearTimeout(wakingTimer);
-    setServerWaking(false);
+    clearTimeout(wakingTimer);
+    if (isMarkedSlow) {
+      decrementSlow();
+    }
 
     if (res.status === 401) {
       // Token expired or invalid — clear state and navigate without reload
@@ -80,8 +97,10 @@ async function request<T = unknown>(path: string, options: FetchOptions = {}): P
     return res.json() as Promise<T>;
   } catch (err: unknown) {
     clearTimeout(timeoutId);
-    if (wakingTimer) clearTimeout(wakingTimer);
-    setServerWaking(false);
+    clearTimeout(wakingTimer);
+    if (isMarkedSlow) {
+      decrementSlow();
+    }
 
     if (err instanceof Error && err.name === 'AbortError') {
       throw new Error('Request timed out. The server may still be waking up. Please try again.');

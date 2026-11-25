@@ -97,16 +97,16 @@ export default function AppLayout() {
           : 'bg-slate-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-950/30 via-slate-950 to-slate-950'
       } text-white flex`}
     >
-      {/* Waking Server Banner */}
-      {isServerWaking && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500/90 text-slate-950 text-xs font-semibold py-1.5 px-4 text-center backdrop-blur-md shadow-md animate-pulse">
-          ⚡ Server is waking up (free tier spins down when inactive). Please wait a moment...
-        </div>
-      )}
-
       {!isFocusMode && <Sidebar />}
 
       <main className={`flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden ${!isFocusMode ? 'pb-20 md:pb-0' : ''}`}>
+        {/* Waking Server Banner — non-overlapping in layout flow */}
+        {isServerWaking && (
+          <div className="w-full bg-amber-500 text-slate-950 text-xs font-semibold py-2 px-4 text-center shadow-md flex items-center justify-center gap-2 shrink-0 animate-pulse">
+            <span>⚡ Server is waking up (free tier spins down when inactive). Please wait a moment...</span>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <Outlet context={{ tasksLoading, tasksError }} />
         </div>
