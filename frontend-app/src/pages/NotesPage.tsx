@@ -4,10 +4,12 @@ import { Plus, Trash2, X, StickyNote, Search, Tag } from 'lucide-react';
 import { useAppStore, Note } from '../store/store';
 import { format } from 'date-fns';
 
-const uid = () => Math.random().toString(36).substr(2, 9);
-
 export default function NotesPage() {
-  const { notes, addNote, updateNote, deleteNote } = useAppStore();
+  const notes = useAppStore((s) => s.notes);
+  const addNote = useAppStore((s) => s.addNote);
+  const updateNote = useAppStore((s) => s.updateNote);
+  const deleteNote = useAppStore((s) => s.deleteNote);
+
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -16,40 +18,43 @@ export default function NotesPage() {
   const [tagInput, setTagInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filtered = notes.filter(n => {
+  const filtered = notes.filter((n) => {
     if (!searchQuery) return true;
-    return n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    return (
+      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       n.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      n.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
   });
 
   const openNew = () => {
-    setTitle(''); setContent(''); setTags([]); setTagInput('');
+    setTitle('');
+    setContent('');
+    setTags([]);
+    setTagInput('');
     setEditingId(null);
     setShowAdd(true);
   };
 
   const openEdit = (note: Note) => {
-    setTitle(note.title); setContent(note.content); setTags(note.tags); setTagInput('');
+    setTitle(note.title);
+    setContent(note.content);
+    setTags(note.tags);
+    setTagInput('');
     setEditingId(note._id);
     setShowAdd(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) return;
-    const now = new Date().toISOString();
     if (editingId) {
-      updateNote(editingId, { title: title.trim(), content, tags, updatedAt: now });
+      await updateNote(editingId, { title: title.trim(), content, tags });
     } else {
-      const note: Note = {
-        _id: uid(),
+      await addNote({
         title: title.trim(),
         content,
         tags,
-        createdAt: now,
-        updatedAt: now,
-      };
-      addNote(note);
+      });
     }
     setShowAdd(false);
   };
@@ -121,7 +126,10 @@ export default function NotesPage() {
                 <div className="flex items-start justify-between mb-2 md:mb-3">
                   <h3 className="font-semibold text-white text-base line-clamp-1 flex-1 min-w-0 mr-2">{note.title}</h3>
                   <button
-                    onClick={(e) => { e.stopPropagation(); deleteNote(note._id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNote(note._id);
+                    }}
                     className="touch-action-btn p-1 rounded-lg hover:bg-rose-500/20 active:bg-rose-500/20 text-slate-600 hover:text-rose-400 transition shrink-0"
                     style={{ minWidth: '28px', minHeight: '28px' }}
                   >
@@ -133,13 +141,15 @@ export default function NotesPage() {
 
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex flex-wrap gap-1 flex-1 min-w-0 mr-2">
-                    {note.tags.slice(0, 3).map(tag => (
+                    {note.tags.slice(0, 3).map((tag) => (
                       <span key={tag} className="tag-chip text-[10px]">
                         <Tag className="w-2.5 h-2.5" /> {tag}
                       </span>
                     ))}
                   </div>
-                  <span className="text-[10px] text-slate-600 shrink-0">{format(new Date(note.updatedAt), 'MMM d')}</span>
+                  <span className="text-[10px] text-slate-600 shrink-0">
+                    {note.updatedAt ? format(new Date(note.updatedAt), 'MMM d') : ''}
+                  </span>
                 </div>
               </motion.div>
             );
@@ -166,7 +176,11 @@ export default function NotesPage() {
               className="relative w-full max-w-lg bg-slate-900 border border-white/[0.1] p-5 rounded-t-2xl md:rounded-2xl shadow-2xl max-h-[90vh] md:max-h-[85vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <button onClick={() => setShowAdd(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white transition p-1" style={{ minWidth: '32px', minHeight: '32px' }}>
+              <button
+                onClick={() => setShowAdd(false)}
+                className="absolute top-4 right-4 text-slate-500 hover:text-white transition p-1"
+                style={{ minWidth: '32px', minHeight: '32px' }}
+              >
                 <X className="w-5 h-5" />
               </button>
 
@@ -194,10 +208,15 @@ export default function NotesPage() {
                 {/* Tags */}
                 <div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    {tags.map(tag => (
+                    {tags.map((tag) => (
                       <span key={tag} className="tag-chip flex items-center gap-1">
                         {tag}
-                        <button onClick={() => setTags(tags.filter(t => t !== tag))} className="hover:text-rose-400 p-0.5"><X className="w-3 h-3" /></button>
+                        <button
+                          onClick={() => setTags(tags.filter((t) => t !== tag))}
+                          className="hover:text-rose-400 p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
                       </span>
                     ))}
                   </div>
@@ -207,14 +226,25 @@ export default function NotesPage() {
                       placeholder="Add tag"
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
                       className="input-base text-sm flex-1"
                     />
-                    <button onClick={addTag} className="btn-secondary text-sm px-3">Add</button>
+                    <button onClick={addTag} className="btn-secondary text-sm px-3">
+                      Add
+                    </button>
                   </div>
                 </div>
 
-                <button onClick={handleSave} disabled={!title.trim()} className="w-full btn-primary text-sm">
+                <button
+                  onClick={handleSave}
+                  disabled={!title.trim()}
+                  className="w-full btn-primary text-sm"
+                >
                   {editingId ? 'Save Changes' : 'Create Note'}
                 </button>
               </div>

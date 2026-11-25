@@ -2,103 +2,115 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Task from '../models/Task.js';
-import Project from '../models/Project.js';
+import Habit from '../models/Habit.js';
+import Note from '../models/Note.js';
+import TimeBlock from '../models/TimeBlock.js';
 import auth from '../middleware/auth.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-// GET /user/me — Get authenticated user profile
-router.get('/me', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password -googleAccessToken -googleRefreshToken');
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+// GET /api/user/me — Get authenticated user profile
+router.get('/me', auth, asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id).select('-password -googleAccessToken -googleRefreshToken');
+  if (!user) return res.status(404).json({ msg: 'User not found' });
+  res.json(user);
+}));
+
+// PUT /api/user/update — Update profile (name, avatar, preferences) with strict whitelist
+router.put('/update', auth, asyncHandler(async (req, res) => {
+  const { name, avatar, preferences } = req.body;
+  const updates = {};
+
+  if (typeof name === 'string' && name.trim()) {
+    updates.name = name.trim();
   }
-});
-
-// PUT /user/update — Update profile (name, avatar, preferences)
-router.put('/update', auth, async (req, res) => {
-  try {
-    const { name, avatar, preferences } = req.body;
-    const updates = {};
-    if (name) updates.name = name;
-    if (avatar) updates.avatar = avatar;
-    if (preferences) updates.preferences = preferences;
-
-    const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true })
-      .select('-password -googleAccessToken -googleRefreshToken');
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+  if (typeof avatar === 'string') {
+    updates.avatar = avatar;
   }
-});
-
-// PUT /user/password — Change password
-router.put('/password', auth, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ msg: 'Both current and new password are required' });
-    }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ msg: 'New password must be at least 6 characters' });
-    }
-
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    if (user.password) {
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
-      if (!isMatch) return res.status(400).json({ msg: 'Current password is incorrect' });
-    } else {
-      // User registered with Google and has no password yet
-      if (currentPassword !== '') {
-        return res.status(400).json({ msg: 'Account created with Google. Leave current password empty to set a new one.' });
+  if (preferences && typeof preferences === 'object') {
+    const allowedPrefKeys = ['darkMode', 'notifications', 'autoBackup'];
+    const sanitizedPref = {};
+    for (const key of allowedPrefKeys) {
+      if (typeof preferences[key] === 'boolean') {
+        sanitizedPref[key] = preferences[key];
       }
     }
-
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
-
-    res.json({ msg: 'Password updated successfully' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    if (Object.keys(sanitizedPref).length > 0) {
+      updates.preferences = sanitizedPref;
+    }
   }
-});
 
-// DELETE /user/delete — Cascade delete account
-router.delete('/delete', auth, async (req, res) => {
-  try {
-    const userId = req.user.id;
+  // Strictly disallow any tampering with identity, auth, or tokens
+  delete updates._id;
+  delete updates.id;
+  delete updates.email;
+  delete updates.password;
+  delete updates.googleId;
+  delete updates.googleAccessToken;
+  delete updates.googleRefreshToken;
 
-    // Cascade delete all user data
-    const [taskResult, projectResult] = await Promise.all([
-      Task.deleteMany({ userId }),
-      Project.deleteMany({ owner: userId }),
-    ]);
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $set: updates },
+    { returnDocument: 'after', runValidators: true }
+  ).select('-password -googleAccessToken -googleRefreshToken');
 
-    // Delete user
-    await User.findByIdAndDelete(userId);
+  if (!user) return res.status(404).json({ msg: 'User not found' });
+  res.json(user);
+}));
 
-    console.log(`Account deleted: userId=${userId}, tasks=${taskResult.deletedCount}, projects=${projectResult.deletedCount}`);
+// PUT /api/user/password — Change password (allows Google-only users to set initial password)
+router.put('/password', auth, asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
 
-    res.json({
-      msg: 'Account and all associated data deleted permanently',
-      deleted: {
-        tasks: taskResult.deletedCount,
-        projects: projectResult.deletedCount,
-      }
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ msg: 'New password must be at least 8 characters long' });
   }
-});
+
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ msg: 'User not found' });
+
+  // If user already has a password set, require current password and verify
+  if (user.password) {
+    if (!currentPassword) {
+      return res.status(400).json({ msg: 'Current password is required' });
+    }
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Current password is incorrect' });
+    }
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(newPassword, salt);
+  await user.save();
+
+  res.json({ msg: 'Password updated successfully' });
+}));
+
+// DELETE /api/user/delete — Cascade delete account and user data
+router.delete('/delete', auth, asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const [taskResult, habitResult, noteResult, calendarResult] = await Promise.all([
+    Task.deleteMany({ userId }),
+    Habit.deleteMany({ userId }),
+    Note.deleteMany({ userId }),
+    TimeBlock.deleteMany({ userId })
+  ]);
+
+  await User.findByIdAndDelete(userId);
+
+  res.json({
+    msg: 'Account and all associated data deleted permanently',
+    deleted: {
+      tasks: taskResult.deletedCount,
+      habits: habitResult.deletedCount,
+      notes: noteResult.deletedCount,
+      timeBlocks: calendarResult.deletedCount
+    }
+  });
+}));
 
 export default router;

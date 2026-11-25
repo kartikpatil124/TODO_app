@@ -32,28 +32,36 @@ export async function getTokenFromCode(code) {
   return tokens;
 }
 
-function getAuthedClient(accessToken, refreshToken) {
+function getAuthedClient(accessToken, refreshToken, onTokens) {
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({
     access_token: accessToken,
     refresh_token: refreshToken,
   });
+
+  if (typeof onTokens === 'function') {
+    oauth2Client.on('tokens', (tokens) => {
+      onTokens(tokens);
+    });
+  }
+
   return oauth2Client;
 }
 
-async function findOrCreateFolder(drive) {
-  // Search for existing folder
+async function findFolder(drive) {
   const res = await drive.files.list({
     q: `name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id, name)',
     spaces: 'drive',
   });
+  return res.data.files.length > 0 ? res.data.files[0].id : null;
+}
 
-  if (res.data.files.length > 0) {
-    return res.data.files[0].id;
-  }
+async function findOrCreateFolder(drive) {
+  const existingId = await findFolder(drive);
+  if (existingId) return existingId;
 
-  // Create folder
+  // Create folder if not found
   const folder = await drive.files.create({
     requestBody: {
       name: BACKUP_FOLDER_NAME,
@@ -66,6 +74,7 @@ async function findOrCreateFolder(drive) {
 }
 
 async function findBackupFile(drive, folderId) {
+  if (!folderId) return null;
   const res = await drive.files.list({
     q: `name='${BACKUP_FILE_NAME}' and '${folderId}' in parents and trashed=false`,
     fields: 'files(id, name, modifiedTime)',
@@ -74,8 +83,8 @@ async function findBackupFile(drive, folderId) {
   return res.data.files.length > 0 ? res.data.files[0] : null;
 }
 
-export async function uploadBackup(accessToken, refreshToken, backupData) {
-  const auth = getAuthedClient(accessToken, refreshToken);
+export async function uploadBackup(accessToken, refreshToken, backupData, onTokens) {
+  const auth = getAuthedClient(accessToken, refreshToken, onTokens);
   const drive = google.drive({ version: 'v3', auth });
 
   const folderId = await findOrCreateFolder(drive);
@@ -107,15 +116,19 @@ export async function uploadBackup(accessToken, refreshToken, backupData) {
   }
 }
 
-export async function downloadBackup(accessToken, refreshToken) {
-  const auth = getAuthedClient(accessToken, refreshToken);
+export async function downloadBackup(accessToken, refreshToken, onTokens) {
+  const auth = getAuthedClient(accessToken, refreshToken, onTokens);
   const drive = google.drive({ version: 'v3', auth });
 
-  const folderId = await findOrCreateFolder(drive);
-  const file = await findBackupFile(drive, folderId);
+  // Only find folder; do NOT create empty folder if none exists
+  const folderId = await findFolder(drive);
+  if (!folderId) {
+    return null;
+  }
 
+  const file = await findBackupFile(drive, folderId);
   if (!file) {
-    return null; // No backup found
+    return null;
   }
 
   const res = await drive.files.get(
@@ -124,13 +137,4 @@ export async function downloadBackup(accessToken, refreshToken) {
   );
 
   return typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-}
-
-export async function refreshTokenIfNeeded(user) {
-  // googleapis library handles refresh automatically when refresh_token is set
-  // This function is a placeholder for manual refresh if needed
-  return {
-    accessToken: user.googleAccessToken,
-    refreshToken: user.googleRefreshToken,
-  };
 }

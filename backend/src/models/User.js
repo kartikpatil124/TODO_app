@@ -1,24 +1,17 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
   password: { type: String },
   avatar: { type: String, default: '' },
-  xp: { type: Number, default: 0 },
-  level: { type: Number, default: 1 },
-  streak: { type: Number, default: 0 },
-  chronotype: { type: String, enum: ['Lion', 'Bear', 'Wolf', 'Dolphin'], default: 'Bear' },
-  peakHours: {
-    start: { type: String, default: '10:00' },
-    end: { type: String, default: '14:00' }
-  },
   // Google OAuth / Drive
   googleId: { type: String },
   googleAccessToken: { type: String },
   googleRefreshToken: { type: String },
   driveConnected: { type: Boolean, default: false },
   lastBackup: { type: Date },
+  isEmailVerified: { type: Boolean, default: false },
   // Preferences
   preferences: {
     darkMode: { type: Boolean, default: true },

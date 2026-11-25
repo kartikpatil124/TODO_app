@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Flame, BatteryFull, Calendar, Tag, RotateCcw, ListTodo, Plus } from 'lucide-react';
-import { useAppStore, Task, Priority, EnergyLevel, RecurringType, SubTask } from '../store/store';
-
-const uid = () => Math.random().toString(36).substr(2, 9);
+import { useAppStore, Priority, EnergyLevel, RecurringType, SubTask } from '../store/store';
+import { uid } from '../lib/id';
+import { getTodayString, getTomorrowString, getNextWeekString } from '../lib/date';
 
 export default function AddTaskModal() {
   const { isAddModalOpen, setAddModalOpen, addTask } = useAppStore();
@@ -22,8 +22,6 @@ export default function AddTaskModal() {
   // Parse natural language for date/priority hints
   const parsedHints = parseNaturalLanguage(title);
 
-  if (!isAddModalOpen) return null;
-
   const reset = () => {
     setTitle(''); setDescription(''); setPriority('P4'); setEnergy('shallow');
     setDueDate(''); setTags([]); setTagInput(''); setRecurring('none');
@@ -34,8 +32,7 @@ export default function AddTaskModal() {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const newTask: Task = {
-      _id: uid(),
+    addTask({
       title: title.trim(),
       description: description || undefined,
       status: 'todo',
@@ -46,10 +43,8 @@ export default function AddTaskModal() {
       subtasks,
       recurring,
       completed: false,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    addTask(newTask);
     setAddModalOpen(false);
     reset();
   };
@@ -70,7 +65,8 @@ export default function AddTaskModal() {
 
   return (
     <AnimatePresence>
-      <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setAddModalOpen(false); reset(); } }}>
+      {isAddModalOpen && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setAddModalOpen(false); reset(); } }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -296,7 +292,8 @@ export default function AddTaskModal() {
             </button>
           </form>
         </motion.div>
-      </div>
+        </div>
+      )}
     </AnimatePresence>
   );
 }
@@ -312,17 +309,12 @@ function parseNaturalLanguage(text: string): { date?: string; priority?: Priorit
   else if (lower.includes('@p3')) result.priority = 'P3';
 
   // Date detection
-  const today = new Date();
   if (lower.includes('today')) {
-    result.date = today.toISOString().split('T')[0];
+    result.date = getTodayString();
   } else if (lower.includes('tomorrow')) {
-    const tmr = new Date(today);
-    tmr.setDate(tmr.getDate() + 1);
-    result.date = tmr.toISOString().split('T')[0];
+    result.date = getTomorrowString();
   } else if (lower.includes('next week')) {
-    const nw = new Date(today);
-    nw.setDate(nw.getDate() + 7);
-    result.date = nw.toISOString().split('T')[0];
+    result.date = getNextWeekString();
   }
 
   return result;

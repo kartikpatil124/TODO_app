@@ -1,37 +1,36 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Flame, Trash2, X, Check } from 'lucide-react';
-import { useAppStore, Habit } from '../store/store';
-
-const uid = () => Math.random().toString(36).substr(2, 9);
-const today = () => new Date().toISOString().split('T')[0];
+import { useAppStore } from '../store/store';
+import { getTodayString, getLocalDateString } from '../lib/date';
 
 const ICONS = ['🏃', '📚', '🧘', '💧', '✍️', '🎯', '💪', '🎵', '🧠', '🌿', '💤', '📋'];
 const COLORS = ['#f43f5e', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ec4899', '#6366f1', '#14b8a6'];
 
 export default function HabitsPage() {
-  const { habits, addHabit, deleteHabit, toggleHabitComplete } = useAppStore();
+  const habits = useAppStore((s) => s.habits);
+  const addHabit = useAppStore((s) => s.addHabit);
+  const deleteHabit = useAppStore((s) => s.deleteHabit);
+  const toggleHabitComplete = useAppStore((s) => s.toggleHabitComplete);
+
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState('🎯');
   const [color, setColor] = useState('#6366f1');
   const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily');
 
-  const todayStr = today();
+  const todayStr = getTodayString();
 
   const handleAdd = () => {
     if (!title.trim()) return;
-    const habit: Habit = {
-      _id: uid(),
+    addHabit({
       title: title.trim(),
       frequency,
       streak: 0,
       completedDates: [],
       color,
       icon,
-      createdAt: new Date().toISOString(),
-    };
-    addHabit(habit);
+    });
     setTitle(''); setIcon('🎯'); setColor('#6366f1'); setFrequency('daily');
     setShowAdd(false);
   };
@@ -40,7 +39,7 @@ export default function HabitsPage() {
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   });
 
   return (

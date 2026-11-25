@@ -3,7 +3,11 @@ import { useAppStore } from '../store/store';
 import React from 'react';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAppStore();
-  if (!isAuthenticated) return <Navigate to="/" replace />;
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 }

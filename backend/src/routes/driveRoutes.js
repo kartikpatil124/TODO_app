@@ -1,186 +1,214 @@
 import express from 'express';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import auth from '../middleware/auth.js';
 import User from '../models/User.js';
 import Task from '../models/Task.js';
-import Project from '../models/Project.js';
 import * as driveService from '../services/driveService.js';
 import { FRONTEND_URL } from '../config/appUrls.js';
+import { encryptToken, decryptToken } from '../utils/crypto.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-// GET /drive/status — Check Drive connection status
-router.get('/status', auth, async (req, res) => {
-  try {
-    if (!driveService.isConfigured()) {
-      return res.json({ configured: false, connected: false, lastBackup: null });
+// Helper to persist refreshed Google tokens
+function createTokenRefreshHandler(userId) {
+  return async (newTokens) => {
+    try {
+      const updates = {};
+      if (newTokens.access_token) updates.googleAccessToken = encryptToken(newTokens.access_token);
+      if (newTokens.refresh_token) updates.googleRefreshToken = encryptToken(newTokens.refresh_token);
+      if (Object.keys(updates).length > 0) {
+        await User.findByIdAndUpdate(userId, updates);
+      }
+    } catch (err) {
+      console.error('Failed to persist refreshed Drive tokens:', err);
     }
-    const user = await User.findById(req.user.id).select('driveConnected lastBackup');
-    res.json({
-      configured: true,
-      connected: user.driveConnected || false,
-      lastBackup: user.lastBackup || null,
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-});
+  };
+}
 
-// GET /drive/connect — Get Google OAuth consent URL
+// GET /api/drive/status — Check Drive connection status
+router.get('/status', auth, asyncHandler(async (req, res) => {
+  if (!driveService.isConfigured()) {
+    return res.json({ configured: false, connected: false, lastBackup: null });
+  }
+  const user = await User.findById(req.user.id).select('driveConnected lastBackup');
+  res.json({
+    configured: true,
+    connected: Boolean(user?.driveConnected),
+    lastBackup: user?.lastBackup || null,
+  });
+}));
+
+// GET /api/drive/connect — Get Google OAuth consent URL with signed state JWT
 router.get('/connect', auth, (req, res) => {
-  try {
-    if (!driveService.isConfigured()) {
-      return res.status(400).json({ msg: 'Google Drive is not configured on this server' });
-    }
-    const url = driveService.getAuthUrl();
-    // Append state with userId so we can identify user in callback
-    const separator = url.includes('?') ? '&' : '?';
-    const urlWithState = `${url}${separator}state=${req.user.id}`;
-    res.json({ url: urlWithState });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+  if (!driveService.isConfigured()) {
+    return res.status(400).json({ msg: 'Google Drive is not configured on this server' });
   }
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (!JWT_SECRET) {
+    return res.status(500).json({ msg: 'JWT_SECRET is missing' });
+  }
+
+  // Sign state with user id and a random nonce (10 min expiry)
+  const stateToken = jwt.sign(
+    { userId: req.user.id, nonce: crypto.randomUUID() },
+    JWT_SECRET,
+    { expiresIn: '10m' }
+  );
+
+  const url = driveService.getAuthUrl();
+  const separator = url.includes('?') ? '&' : '?';
+  const urlWithState = `${url}${separator}state=${encodeURIComponent(stateToken)}`;
+  res.json({ url: urlWithState });
 });
 
-// GET /drive/callback — OAuth callback (redirected from Google)
-router.get('/callback', async (req, res) => {
-  try {
-    const { code, state: userId } = req.query;
-    if (!code) return res.status(400).send('No authorization code');
-
-    const tokens = await driveService.getTokenFromCode(code);
-
-    await User.findByIdAndUpdate(userId, {
-      googleAccessToken: tokens.access_token,
-      googleRefreshToken: tokens.refresh_token || undefined,
-      driveConnected: true,
-    });
-
-    // Redirect to frontend profile page
-    res.redirect(`${FRONTEND_URL}?driveConnected=true`);
-  } catch (err) {
-    console.error('Drive callback error:', err.message);
-    res.redirect(`${FRONTEND_URL}?driveError=true`);
+// GET /api/drive/callback — OAuth callback (verifies state JWT, encrypts tokens)
+router.get('/callback', asyncHandler(async (req, res) => {
+  const { code, state } = req.query;
+  if (!code || !state) {
+    return res.redirect(`${FRONTEND_URL}/profile?driveError=missing_parameters`);
   }
-});
 
-// POST /drive/backup — Backup data to Google Drive
-router.post('/backup', auth, async (req, res) => {
+  const JWT_SECRET = process.env.JWT_SECRET;
+  let decoded;
   try {
-    const user = await User.findById(req.user.id);
-    if (!user.driveConnected || !user.googleAccessToken) {
-      return res.status(400).json({ msg: 'Google Drive not connected' });
-    }
-
-    // Gather all user data
-    const [tasks, projects] = await Promise.all([
-      Task.find({ assignedTo: req.user.id }),
-      Project.find({ owner: req.user.id }),
-    ]);
-
-    const backupData = {
-      tasks,
-      projects,
-      metadata: {
-        lastBackup: new Date().toISOString(),
-        version: '1.0',
-        userId: req.user.id,
-        taskCount: tasks.length,
-        projectCount: projects.length,
-      },
-    };
-
-    const result = await driveService.uploadBackup(
-      user.googleAccessToken,
-      user.googleRefreshToken,
-      backupData
-    );
-
-    // Update last backup timestamp
-    user.lastBackup = new Date();
-    await user.save();
-
-    res.json({
-      msg: `Backup ${result.action} successfully`,
-      lastBackup: user.lastBackup,
-      stats: { tasks: tasks.length, projects: projects.length },
-    });
+    decoded = jwt.verify(state, JWT_SECRET);
   } catch (err) {
-    console.error('Backup error:', err.message);
-    if (err.code === 401 || err.message?.includes('invalid_grant')) {
-      // Token expired — mark as disconnected
-      await User.findByIdAndUpdate(req.user.id, { driveConnected: false, googleAccessToken: null });
-      return res.status(401).json({ msg: 'Drive session expired. Please reconnect.' });
-    }
-    res.status(500).json({ msg: 'Backup failed' });
+    console.error('Invalid Drive OAuth state token:', err.message);
+    return res.redirect(`${FRONTEND_URL}/profile?driveError=invalid_state`);
   }
-});
 
-// POST /drive/restore — Restore data from Google Drive
-router.post('/restore', auth, async (req, res) => {
+  const userId = decoded.userId;
+  const tokens = await driveService.getTokenFromCode(code);
+
+  const updateFields = {
+    driveConnected: true,
+  };
+  if (tokens.access_token) {
+    updateFields.googleAccessToken = encryptToken(tokens.access_token);
+  }
+  if (tokens.refresh_token) {
+    updateFields.googleRefreshToken = encryptToken(tokens.refresh_token);
+  }
+
+  await User.findByIdAndUpdate(userId, updateFields);
+  res.redirect(`${FRONTEND_URL}/profile?drive=connected`);
+}));
+
+// POST /api/drive/backup — Backup data to Google Drive
+router.post('/backup', auth, asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user || !user.driveConnected || !user.googleAccessToken) {
+    return res.status(400).json({ msg: 'Google Drive not connected' });
+  }
+
+  const accessToken = decryptToken(user.googleAccessToken);
+  const refreshToken = decryptToken(user.googleRefreshToken);
+
+  const tasks = await Task.find({ userId: req.user.id });
+
+  const backupData = {
+    tasks,
+    metadata: {
+      lastBackup: new Date().toISOString(),
+      version: '1.0',
+      userId: req.user.id,
+      taskCount: tasks.length,
+    },
+  };
+
+  const onTokens = createTokenRefreshHandler(req.user.id);
+  const result = await driveService.uploadBackup(accessToken, refreshToken, backupData, onTokens);
+
+  user.lastBackup = new Date();
+  await user.save();
+
+  res.json({
+    msg: `Backup ${result.action} successfully`,
+    lastBackup: user.lastBackup,
+    stats: { tasks: tasks.length },
+  });
+}));
+
+// POST /api/drive/restore — Restore data from Google Drive (validated schema + transaction)
+router.post('/restore', auth, asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user || !user.driveConnected || !user.googleAccessToken) {
+    return res.status(400).json({ msg: 'Google Drive not connected' });
+  }
+
+  const accessToken = decryptToken(user.googleAccessToken);
+  const refreshToken = decryptToken(user.googleRefreshToken);
+  const onTokens = createTokenRefreshHandler(req.user.id);
+
+  const backupData = await driveService.downloadBackup(accessToken, refreshToken, onTokens);
+  if (!backupData || typeof backupData !== 'object' || !Array.isArray(backupData.tasks)) {
+    return res.status(400).json({ msg: 'No valid backup found on Google Drive' });
+  }
+
+  // Schema validation before modifying any existing data
+  for (const t of backupData.tasks) {
+    if (!t || typeof t.title !== 'string' || !t.title.trim()) {
+      return res.status(400).json({ msg: 'Backup contains invalid task records. Restore aborted.' });
+    }
+  }
+
+  const restoredTasks = backupData.tasks.map((task) => ({
+    title: task.title.trim(),
+    description: task.description,
+    status: task.status || 'todo',
+    priority: task.priority || 'P4',
+    energyLevel: task.energyLevel || 'shallow',
+    dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+    tags: Array.isArray(task.tags) ? task.tags : [],
+    subtasks: Array.isArray(task.subtasks) ? task.subtasks : [],
+    recurring: task.recurring || 'none',
+    completed: Boolean(task.completed),
+    userId: req.user.id,
+  }));
+
+  // Perform replacement safely
   try {
-    const user = await User.findById(req.user.id);
-    if (!user.driveConnected || !user.googleAccessToken) {
-      return res.status(400).json({ msg: 'Google Drive not connected' });
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await Task.deleteMany({ userId: req.user.id }, { session });
+        if (restoredTasks.length > 0) {
+          await Task.insertMany(restoredTasks, { session });
+        }
+      });
+    } finally {
+      await session.endSession();
     }
-
-    const backupData = await driveService.downloadBackup(
-      user.googleAccessToken,
-      user.googleRefreshToken
-    );
-
-    if (!backupData) {
-      return res.status(404).json({ msg: 'No backup found on Google Drive' });
-    }
-
-    // Restore strategy: clear existing data and replace
-    await Promise.all([
-      Task.deleteMany({ assignedTo: req.user.id }),
-      Project.deleteMany({ owner: req.user.id }),
-    ]);
-
-    // Re-insert with correct user ownership
-    if (backupData.tasks?.length) {
-      const tasks = backupData.tasks.map(t => ({ ...t, _id: undefined, assignedTo: req.user.id }));
-      await Task.insertMany(tasks);
-    }
-    if (backupData.projects?.length) {
-      const projects = backupData.projects.map(p => ({ ...p, _id: undefined, owner: req.user.id }));
-      await Project.insertMany(projects);
-    }
-
-    res.json({
-      msg: 'Data restored successfully from backup',
-      restored: {
-        tasks: backupData.tasks?.length || 0,
-        projects: backupData.projects?.length || 0,
-      },
-      backupTimestamp: backupData.metadata?.lastBackup,
-    });
   } catch (err) {
-    console.error('Restore error:', err.message);
-    if (err.code === 401 || err.message?.includes('invalid_grant')) {
-      await User.findByIdAndUpdate(req.user.id, { driveConnected: false, googleAccessToken: null });
-      return res.status(401).json({ msg: 'Drive session expired. Please reconnect.' });
+    // If running in an environment without replica sets (e.g. standalone test server), fallback to standard sequential
+    if (err.message && err.message.includes('Transactions are not supported')) {
+      await Task.deleteMany({ userId: req.user.id });
+      if (restoredTasks.length > 0) {
+        await Task.insertMany(restoredTasks);
+      }
+    } else {
+      throw err;
     }
-    res.status(500).json({ msg: 'Restore failed' });
   }
-});
 
-// POST /drive/disconnect — Disconnect Google Drive
-router.post('/disconnect', auth, async (req, res) => {
-  try {
-    await User.findByIdAndUpdate(req.user.id, {
-      googleAccessToken: null,
-      googleRefreshToken: null,
-      driveConnected: false,
-    });
-    res.json({ msg: 'Google Drive disconnected' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-});
+  res.json({
+    msg: 'Data restored successfully from Google Drive',
+    stats: { tasks: restoredTasks.length },
+  });
+}));
+
+// POST /api/drive/disconnect — Disconnect Google Drive
+router.post('/disconnect', auth, asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(req.user.id, {
+    googleAccessToken: null,
+    googleRefreshToken: null,
+    driveConnected: false,
+    lastBackup: null,
+  });
+  res.json({ msg: 'Google Drive disconnected successfully' });
+}));
 
 export default router;

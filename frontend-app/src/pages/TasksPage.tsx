@@ -8,14 +8,20 @@ import {
 import { useAppStore, Task, TaskStatus, Priority } from '../store/store';
 
 export default function TasksPage() {
-  const { tasks, taskView, setTaskView, toggleTaskComplete, toggleSubtask, deleteTask,
-    setAddModalOpen } = useAppStore();
+  const tasks = useAppStore((s) => s.tasks);
+  const taskView = useAppStore((s) => s.taskView);
+  const setTaskView = useAppStore((s) => s.setTaskView);
+  const toggleTaskComplete = useAppStore((s) => s.toggleTaskComplete);
+  const toggleSubtask = useAppStore((s) => s.toggleSubtask);
+  const deleteTask = useAppStore((s) => s.deleteTask);
+  const setAddModalOpen = useAppStore((s) => s.setAddModalOpen);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
-  const filtered = tasks.filter(t => {
+  const filtered = tasks.filter((t) => {
     if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterPriority !== 'all' && t.priority !== filterPriority) return false;
     if (filterStatus !== 'all' && t.status !== filterStatus) return false;
@@ -163,7 +169,7 @@ export default function TasksPage() {
                     </div>
                   </div>
 
-                  {/* Actions — always visible on touch */}
+                  {/* Actions */}
                   <button
                     onClick={() => deleteTask(task._id)}
                     className="touch-action-btn text-slate-700 hover:text-rose-400 transition-colors shrink-0 p-1"
@@ -213,9 +219,10 @@ export default function TasksPage() {
   );
 }
 
-// ─── Kanban Board — horizontal scroll on mobile ─────────
+// ─── Kanban Board ────────────────────────────────────────
 function KanbanBoard({ tasks }: { tasks: Task[] }) {
-  const { updateTask, toggleTaskComplete } = useAppStore();
+  const updateTask = useAppStore((s) => s.updateTask);
+  const toggleTaskComplete = useAppStore((s) => s.toggleTaskComplete);
 
   const columns: { id: TaskStatus; label: string; borderColor: string }[] = [
     { id: 'todo', label: 'To Do', borderColor: 'border-t-slate-500' },
@@ -282,7 +289,7 @@ function KanbanBoard({ tasks }: { tasks: Task[] }) {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                       task.priority === 'P1' ? 'bg-rose-500/15 text-rose-400'
                       : task.priority === 'P2' ? 'bg-amber-500/15 text-amber-400'
@@ -291,6 +298,18 @@ function KanbanBoard({ tasks }: { tasks: Task[] }) {
                     {task.tags.slice(0, 2).map(tag => (
                       <span key={tag} className="tag-chip text-[10px]">{tag}</span>
                     ))}
+                    <select
+                      value={task.status}
+                      onChange={(e) => {
+                        const newStatus = e.target.value as TaskStatus;
+                        updateTask(task._id, { status: newStatus, completed: newStatus === 'done' });
+                      }}
+                      className="ml-auto text-[10px] bg-white/[0.08] hover:bg-white/[0.12] text-slate-300 rounded px-1.5 py-0.5 border border-white/[0.1] outline-none cursor-pointer"
+                    >
+                      <option value="todo" className="bg-slate-900 text-white">To Do</option>
+                      <option value="in-progress" className="bg-slate-900 text-white">In Progress</option>
+                      <option value="done" className="bg-slate-900 text-white">Done</option>
+                    </select>
                   </div>
                 </motion.div>
               ))}

@@ -1,22 +1,26 @@
+import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, CheckSquare, CalendarDays, ShoppingBag,
-  Sparkles, StickyNote, Target, ChevronLeft, ChevronRight, Plus, Search, UserCircle2
+  LayoutDashboard, CheckSquare, Sparkles, Plus, Search, UserCircle2,
+  Calendar, Target, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { useAppStore, ActiveModule } from '../store/store';
+import { useAppStore } from '../store/store';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const navItems: { id: ActiveModule; icon: typeof LayoutDashboard; label: string }[] = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { id: 'tasks', icon: CheckSquare, label: 'Tasks' },
-  { id: 'orders', icon: ShoppingBag, label: 'Orders' },
-  { id: 'calendar', icon: CalendarDays, label: 'Calendar' },
-  { id: 'habits', icon: Sparkles, label: 'Habits' },
-  { id: 'notes', icon: StickyNote, label: 'Notes' },
+const navItems = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+  { to: '/calendar', icon: Calendar, label: 'Calendar' },
+  { to: '/habits', icon: Target, label: 'Habits' },
+  { to: '/notes', icon: FileText, label: 'Notes' },
 ];
 
 export default function Sidebar() {
-  const { activeModule, setActiveModule, isSidebarCollapsed, setSidebarCollapsed,
-    setAddModalOpen, setCommandPaletteOpen, isFocusMode, toggleFocusMode } = useAppStore();
+  const isSidebarCollapsed = useAppStore((s) => s.isSidebarCollapsed);
+  const setSidebarCollapsed = useAppStore((s) => s.setSidebarCollapsed);
+  const setAddModalOpen = useAppStore((s) => s.setAddModalOpen);
+  const setCommandPaletteOpen = useAppStore((s) => s.setCommandPaletteOpen);
+  const isFocusMode = useAppStore((s) => s.isFocusMode);
+  const toggleFocusMode = useAppStore((s) => s.toggleFocusMode);
 
   if (isFocusMode) return null;
 
@@ -85,44 +89,55 @@ export default function Sidebar() {
         )}
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeModule === item.id;
           return (
-            <button
-              key={item.id}
-              onClick={() => setActiveModule(item.id)}
-              className={`w-full flex items-center gap-3 rounded-xl transition-all duration-200 ${
-                isSidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5'
-              } ${
-                isActive
-                  ? 'bg-indigo-500/10 text-white border border-indigo-500/20'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] border border-transparent'
-              }`}
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `w-full flex items-center gap-3 rounded-xl transition-all duration-200 ${
+                  isSidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5'
+                } ${
+                  isActive
+                    ? 'bg-indigo-500/10 text-white border border-indigo-500/20 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] border border-transparent'
+                }`
+              }
               title={isSidebarCollapsed ? item.label : undefined}
             >
-              <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-indigo-400' : ''}`} />
-              {!isSidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
-            </button>
+              {({ isActive }) => (
+                <>
+                  <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-indigo-400' : ''}`} />
+                  {!isSidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+                </>
+              )}
+            </NavLink>
           );
         })}
       </nav>
 
       {/* Bottom Section */}
       <div className={`${isSidebarCollapsed ? 'px-3' : 'px-4'} pb-4 space-y-3 shrink-0`}>
-        {/* Profile/Settings */}
-        <button
-          onClick={() => setActiveModule('profile')}
-          className={`w-full flex items-center gap-3 rounded-xl transition-all duration-200 ${
-            isSidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5'
-          } ${
-            activeModule === 'profile'
-              ? 'bg-indigo-500/10 text-white border border-indigo-500/20'
-              : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] border border-transparent'
-          }`}
+        {/* Profile */}
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            `w-full flex items-center gap-3 rounded-xl transition-all duration-200 ${
+              isSidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5'
+            } ${
+              isActive
+                ? 'bg-indigo-500/10 text-white border border-indigo-500/20'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] border border-transparent'
+            }`
+          }
           title={isSidebarCollapsed ? 'Profile' : undefined}
         >
-          <UserCircle2 className={`w-[18px] h-[18px] shrink-0 ${activeModule === 'profile' ? 'text-indigo-400' : ''}`} />
-          {!isSidebarCollapsed && <span className="text-sm font-medium">Profile</span>}
-        </button>
+          {({ isActive }) => (
+            <>
+              <UserCircle2 className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-indigo-400' : ''}`} />
+              {!isSidebarCollapsed && <span className="text-sm font-medium">Profile</span>}
+            </>
+          )}
+        </NavLink>
 
         {/* Focus Mode */}
         {!isSidebarCollapsed ? (

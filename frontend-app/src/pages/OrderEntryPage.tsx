@@ -5,8 +5,7 @@ import {
   Weight, Hash, DollarSign
 } from 'lucide-react';
 import { useAppStore, Order, OrderItem, PricingType } from '../store/store';
-
-const uid = () => Math.random().toString(36).substr(2, 9);
+import { uid } from '../lib/id';
 
 const PRODUCT_SUGGESTIONS = [
   'MS Angle', 'MS Plate 6mm', 'MS Plate 8mm', 'Truss', 'GI Sheet', 'Channel 100mm',
